@@ -1,0 +1,29 @@
+{
+  "name": "stateful_navigator",
+  "version": "0.0.1",
+  "description": "Navigate web apps with observable state.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/teststaybaka/stateful_navigator.git"
+  },
+  "keywords": [
+    "State",
+    "Stateful",
+    "Navigation",
+    "Navigator",
+    "TypeScript"
+  ],
+  "author": "Yuxuan Xie <teststaybaka@gmail.com> (http://www.yuxuanxie.com)",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/teststaybaka/stateful_navigator/issues"
+  },
+  "homepage": "https://github.com/teststaybaka/stateful_navigator#readme",
+  "devDependencies": {
+    "@selfage/tsconfig": "^1.0.7",
+    "typescript": "^4.3.4"
+  },
+  "dependencies": {
+    "@selfage/message": "^1.0.5"
+  }
+}
