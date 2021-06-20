@@ -4,8 +4,10 @@ import { parseMessage } from "@selfage/message/parser";
 export class HistoryTracker<State> {
   private static STATEFUL_QUERY_PARAM = "q";
 
+  public state: State;
+
   public constructor(
-    public state: State,
+    private defaultState: State,
     private stateDescriptor: MessageDescriptor<State>,
     private window: Window
   ) {}
@@ -18,6 +20,7 @@ export class HistoryTracker<State> {
   }
 
   public init(): this {
+    this.state = this.stateDescriptor.factoryFn();
     this.window.addEventListener("popstate", () => {
       this.loadState();
     });
@@ -30,11 +33,13 @@ export class HistoryTracker<State> {
     let stateStr = queryParams.get(HistoryTracker.STATEFUL_QUERY_PARAM);
     if (stateStr) {
       try {
-        this.state = parseMessage(JSON.parse(stateStr), this.stateDescriptor);
+        parseMessage(JSON.parse(stateStr), this.stateDescriptor, this.state);
+        return;
       } catch (e) {
-        // Do nothing.
+        // Fall through.
       }
     }
+    parseMessage(this.defaultState, this.stateDescriptor, this.state);
   }
 
   public pushState(): void {
