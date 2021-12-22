@@ -1,5 +1,5 @@
 {
-  "name": "stateful_navigator",
+  "name": "@selfage/stateful_navigator",
   "version": "0.0.1",
   "description": "Navigate web apps with observable state.",
   "repository": {
@@ -19,11 +19,20 @@
     "url": "https://github.com/teststaybaka/stateful_navigator/issues"
   },
   "homepage": "https://github.com/teststaybaka/stateful_navigator#readme",
+  "main": "./init.js",
+  "types": "./init.d.ts",
+  "files": [
+    "**/*.d.ts",
+    "**/*.js",
+    "!**/*_test.*",
+    "!test_data/**/*"
+  ],
   "devDependencies": {
+    "@selfage/cli": "^2.3.2",
     "@selfage/tsconfig": "^1.0.7",
     "typescript": "^4.3.4"
   },
   "dependencies": {
-    "@selfage/message": "^1.0.5"
+    "@selfage/message": "^2.0.1"
   }
 }
