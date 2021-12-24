@@ -1,5 +1,5 @@
 import { BrowserHistoryPusher } from "./browser_history_pusher";
-import { OnceCaller } from "@selfage/once/caller";
+import { LazyInstance } from "@selfage/once/lazy_instance";
 
 export interface Hideable {
   show: () => void;
@@ -8,7 +8,7 @@ export interface Hideable {
 
 export class TabsNavigator {
   private keyToSetStateFns = new Map<string, (value: boolean) => void>();
-  private keyToTabs = new Map<string, OnceCaller<[], Hideable>>();
+  private keyToTabs = new Map<string, LazyInstance<Hideable>>();
   private hidePreviousTab: () => void = () => {};
 
   public constructor(private browserHistoryPusher: BrowserHistoryPusher) {}
@@ -21,7 +21,7 @@ export class TabsNavigator {
     createTabFactoryFn: () => Hideable,
   ): this {
     this.keyToSetStateFns.set(tabKey, setState);
-    this.keyToTabs.set(tabKey, new OnceCaller(createTabFactoryFn));
+    this.keyToTabs.set(tabKey, new LazyInstance(createTabFactoryFn));
     onStateChange((newValue) => this.handleStateChange(tabKey, newValue));
     onClick(() => this.handleClick(tabKey));
     return this;
@@ -30,10 +30,10 @@ export class TabsNavigator {
   private handleStateChange(tabKey: string, newValue: boolean): void {
     if (newValue) {
       this.hidePreviousTab();
-      this.keyToTabs.get(tabKey).call().show();
+      this.keyToTabs.get(tabKey).get().show();
       this.hidePreviousTab = () => this.hideTab(tabKey);
     } else {
-      this.keyToTabs.get(tabKey).call().hide();
+      this.keyToTabs.get(tabKey).get().hide();
     }
   }
 
