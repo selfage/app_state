@@ -1,6 +1,6 @@
 {
   "name": "@selfage/stateful_navigator",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Navigate with observable state tracked in browser history.",
   "repository": {
     "type": "git",

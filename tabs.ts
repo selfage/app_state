@@ -18,10 +18,10 @@ export class TabsNavigator {
     onStateChange: (callback: (newValue: boolean) => void) => void,
     setState: (value: boolean) => void,
     onClick: (callback: () => void) => void,
-    tabFactoryOnce: OnceCaller<[], Hideable>
+    createTabFactoryFn: () => Hideable,
   ): this {
     this.keyToSetStateFns.set(tabKey, setState);
-    this.keyToTabs.set(tabKey, tabFactoryOnce);
+    this.keyToTabs.set(tabKey, new OnceCaller(createTabFactoryFn));
     onStateChange((newValue) => this.handleStateChange(tabKey, newValue));
     onClick(() => this.handleClick(tabKey));
     return this;
@@ -38,13 +38,13 @@ export class TabsNavigator {
   }
 
   private hideTab(tabKey: string): void {
-    let stateSetFn = this.keyToSetStateFns.get(tabKey);
-    stateSetFn(undefined);
+    let setStateFn = this.keyToSetStateFns.get(tabKey);
+    setStateFn(undefined);
   }
 
   private handleClick(tabKey: string): void {
-    let stateSetFn = this.keyToSetStateFns.get(tabKey);
-    stateSetFn(true);
+    let setStateFn = this.keyToSetStateFns.get(tabKey);
+    setStateFn(true);
     this.browserHistoryPusher.push();
   }
 }
