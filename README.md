@@ -106,14 +106,14 @@ BTW, the type of `browerHistoryTracker` is `BrowerHistoryTracker<State>` by `imp
 ## Tabs navigator
 
 ```TypeScript
-import { TabsNavigator, Hideable } from '@selfage/stateful_navigator/tabs';
+import { TabsNavigator, Removeable } from '@selfage/stateful_navigator/tabs';
 
 // Supposing we created a tracker and a pusher as above.
 let browerHistoryTracker, browserHistoryPusher = // ...
 let homeButton: HTMLDivElement; // Supposing we created a <div> as the button going to the home page.
-let homeTabFactoryFn: () => Hideable; // Supposing we have a factory function that creates a hideable home tab.
+let homeTabFactoryFn: () => Removeable; // Supposing we have a factory function that creates a home tab.
 let historyButton: HTMLDivElement; // Supposing we created a <div> as the button going to the history page.
-let historyTabFactoryFn: () => Hideable; // Supposing we have a factory function that creates a hideable history tab.
+let historyTabFactoryFn: () => Removeable; // Supposing we have a factory function that creates a history tab.
 
 new TabsNavigator(browserHistoryPusher)
   .add(
@@ -138,14 +138,13 @@ browerHistoryTracker.initLoad();
 
 `tabsNavigator.add()` associates an arbitrary tab key (must be unique per `TabsNavigator` instance), a field of the state (handling state change as well as setting a new value), a button that triggers navigation, and a factory function that creates the tab.
 
-Note that the fields of the state used to associate with tabs have to be booleans, indicating whether the associated tab should be shown or hidden.
+Note that the fields of the state used to associate with tabs have to be booleans, indicating whether the associated tab should be shown/created or hidden/removed.
 
-The factory functions take no arguments, and are guaranteed to be called only once to return implemnetations of `Hideable`, which is as simple as below.
+The factory functions take no arguments, and will be called every time that tab needs to be shown. The created tab will be removed every time it needs to be hidden. Thus the tab neesd to be `Removeable` as defined below.
 
 ```TypeScript
-interface Hideable {
-  show: () => void;
-  hide: () => void;
+interface Removeable {
+  remove: () => void;
 }
 ```
 
@@ -154,6 +153,6 @@ The detailed sequence when a navigation happens is as the following.
 1. A button is clicked.
 1. A boolean field of the state representing the new tab is set to `true`.
 1. A boolean field of the state representing the previous shown tab is set to `undefined`.
-1. The previous tab is hidden.
-1. The new tab is created, if not created yet, and shown.
+1. The previous tab is hidden by being removed.
+1. The new tab is shown by being created.
 1. A new history entry is pushed.
