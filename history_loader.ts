@@ -1,22 +1,23 @@
 import { MessageDescriptor } from "@selfage/message/descriptor";
 import { parseMessage } from "@selfage/message/parser";
 
-export class BrowserHistoryTracker<T> {
-  public state: T;
+export class HistoryLoader<T> {
+  public state = this.stateDescriptor.factoryFn();
 
   public constructor(
-    private defaultState: T,
     private stateDescriptor: MessageDescriptor<T>,
     private queryParamKey: string,
     private window: Window
   ) {}
 
-  public init(): this {
-    this.state = this.stateDescriptor.factoryFn();
-    return this;
+  public static create<T>(
+    stateDescriptor: MessageDescriptor<T>,
+    queryParamKey: string
+  ): HistoryLoader<T> {
+    return new HistoryLoader(stateDescriptor, queryParamKey, window).init();
   }
 
-  public initLoad(): this {
+  public init(): this {
     this.load();
     this.window.addEventListener("popstate", () => this.load());
     return this;
@@ -26,22 +27,17 @@ export class BrowserHistoryTracker<T> {
     let stateStr = new URLSearchParams(this.window.location.search).get(
       this.queryParamKey
     );
-    parseMessage(
-      this.parseJsonState(stateStr),
-      this.stateDescriptor,
-      this.state
-    );
-  }
-
-  private parseJsonState(stateStr: string): any {
+    let stateObj: any;
     if (stateStr) {
       try {
-        return JSON.parse(stateStr);
+        stateObj = JSON.parse(stateStr);
       } catch (e) {
-        return this.defaultState;
+        stateObj = {};
       }
     } else {
-      return this.defaultState;
+      stateObj = {};
     }
+
+    parseMessage(stateObj, this.stateDescriptor, this.state);
   }
 }

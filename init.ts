@@ -1,20 +1,12 @@
-import { BrowserHistoryPusher } from "./browser_history_pusher";
-import { BrowserHistoryTracker } from "./browser_history_tracker";
+import { HistoryLoader } from "./history_loader";
+import { HistoryUpdater } from "./history_updater";
 import { MessageDescriptor } from "@selfage/message/descriptor";
 
-export function createTrackerAndPusher<T>(
-  defaultState: T,
+export function createLoaderAndUpdater<T>(
   stateDescriptor: MessageDescriptor<T>,
   queryParamKey: string
-): [BrowserHistoryTracker<T>, BrowserHistoryPusher] {
-  let tracker = new BrowserHistoryTracker<T>(
-    defaultState,
-    stateDescriptor,
-    queryParamKey,
-    window
-  ).init();
-  return [
-    tracker,
-    new BrowserHistoryPusher(tracker.state, queryParamKey, window),
-  ];
+): [HistoryLoader<T>, HistoryUpdater] {
+  let loader = HistoryLoader.create(stateDescriptor, queryParamKey);
+  let updater = HistoryUpdater.create(loader.state, queryParamKey);
+  return [loader, updater];
 }

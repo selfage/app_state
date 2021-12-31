@@ -6,7 +6,7 @@
 
 ## Overview
 
-Written in TypeScript and compiled to ES6 with inline source map & source. See [@selfage/tsconfig](https://www.npmjs.com/package/@selfage/tsconfig) for full compiler options. Provides common type-safe classes to navigate between tabs with observable state, while managing browser history.
+Written in TypeScript and compiled to ES6 with inline source map & source. See [@selfage/tsconfig](https://www.npmjs.com/package/@selfage/tsconfig) for full compiler options. Provides classes to manage associate observable state with browser history.
 
 ## Observable state
 
@@ -15,144 +15,97 @@ This library is based on `@selfage/message` to provide an observable state, whic
 We will use a state generated as below for all the following examples, assuming its file path is at `./state.ts`.
 
 ```TypeScript
+import { EnumDescriptor, MessageDescriptor } from '@selfage/message/descriptor';
 import { EventEmitter } from 'events';
-import { MessageDescriptor, PrimitiveType } from '@selfage/message/descriptor';
 
-export interface State {
-  on(event: 'showHome', listener: (newValue: boolean, oldValue: boolean) => void): this;
-  on(event: 'showHistory', listener: (newValue: boolean, oldValue: boolean) => void): this;
+export enum Page {
+  HOME = 1,
+  HISTORY = 2,
 }
 
-export class State extends EventEmitter {
-  private showHome_?: boolean;
-  get showHome(): boolean {
-    return this.showHome_;
+export let PAGE: EnumDescriptor<Page> = {
+  name: 'Page',
+  values: [
+    {
+      name: 'HOME',
+      value: 1,
+    },
+    {
+      name: 'HISTORY',
+      value: 3,
+    },
+  ]
+}
+
+export interface BodyState {
+  on(event: 'page', listener: (newValue: Page, oldValue: Page) => void): this;
+  on(event: 'init', listener: () => void): this;
+}
+
+export class BodyState extends EventEmitter {
+  private page_?: Page;
+  get page(): Page {
+    return this.page_;
   }
-  set showHome(value: boolean) {
-    let oldValue = this.showHome_;
+  set page(value: Page) {
+    let oldValue = this.page_;
     if (value === oldValue) {
       return;
     }
-    this.showHome_ = value;
-    this.emit('showHome', this.showHome_, oldValue);
+    this.page_ = value;
+    this.emit('page', this.page_, oldValue);
   }
 
-  private showHistory_?: boolean;
-  get showHistory(): boolean {
-    return this.showHistory_;
-  }
-  set showHistory(value: boolean) {
-    let oldValue = this.showHistory_;
-    if (value === oldValue) {
-      return;
+  public triggerInitialEvents(): void {
+    if (this.page_ !== undefined) {
+      this.emit('page', this.page_, undefined);
     }
-    this.showHistory_ = value;
-    this.emit('showHistory', this.showHistory_, oldValue);
+    this.emit('init');
   }
 
   public toJSON(): Object {
     return {
-      showHome: this.showHome,
-      showHistory: this.showHistory,
+      page: this.page,
     };
   }
 }
 
-export let STATE: MessageDescriptor<State> = {
-  name: 'State',
+export let BODY_STATE: MessageDescriptor<BodyState> = {
+  name: 'BodyState',
   factoryFn: () => {
-    return new State();
+    return new BodyState();
   },
   fields: [
     {
-      name: 'showHome',
-      primitiveType: PrimitiveType.BOOLEAN,
-    },
-    {
-      name: 'showHistory',
-      primitiveType: PrimitiveType.BOOLEAN,
+      name: 'page',
+      enumDescriptor: PAGE,
     },
   ]
 };
+
 ```
 
-## Create and use tracker and pusher
+## Loader and updater
 
 ```TypeScript
-import { createTrackerAndPusher } from '@selfage/stateful_navigator';
-import { State, STATE } from './state';
+import { createLoaderAndUpdater } from '@selfage/stateful_navigator';
+import { STATE } from './state';
 
-let defaultState = new State();
-defaultState.showHome = true;
 let queryParamKey = 'q';
-let [browerHistoryTracker, browserHistoryPusher] = createTrackerAndPusher(defaultState, STATE, queryParamKey);
-// Now build your DOM tree and add listeners on browerHistoryTracker.state
-// browerHistoryTracker.state.on('showHistory', ...)
-browerHistoryTracker.initLoad();
+let [loader, updater] = createLoaderAndUpdater(STATE, queryParamKey);
+// Now build your DOM tree and add listeners on loader.state
+// loader.state.on('page', ...)
+
 // When the state is changed and you want a new history entry.
-browserHistoryPusher.push();
+updater.push();
+// When the state is changed and you don't want a new histroy entry.
+updater.replace();
 ```
 
 `STATE` is an instance of `MessageDescriptor` and `State` is the class type. `queryParamKey` is used to compose a query param `q=...` and to get the param value, which holds a stringified state.
 
-`createTrackerAndPusher()` add a listener to `popstate` event to handle users clicking browser's back button, by parsing the query param `q=<stringified historical state>`. However, you have to add listeners to each field of `browerHistoryTracker.state` to actually handle the state change.
+`createLoaderAndUpdater()` adds a listener to `popstate` event to handle users clicking browser's back button, by parsing the query param `q=<stringified historical state>`. However, you have to add listeners to each field of `loader.state` to actually handle the state change.
 
-`browerHistoryTracker.initLoad()` should be called only once, after all listeners are added to `browerHistoryTracker.state`, which parses the query param `q=<stringified current state>` and fires initial state change events. In other words, `initLoad()` is essentially triggering an `popstate` event, but for initial page rendering, which makes listeners added to `browerHistoryTracker.state` handle both initial rendering and history entry popping.
+`updater.push()` should be called whenever you want a new history entry with the current state, which creates a new query param `q=<stringfied current state>` in the URL. It shouldn't be called with every field change, because you may want to group several changes together as one history entry. `updater.replace()` is the same as `updater.push()` except it replace the currrent URL without creating a new history entry.
 
-`browserHistoryPusher.push()` should be called whenever you want a new history entry with the current state, which creates a new query param `q=<stringfied current state>` in the URL. It's not called automatically with every state change, because you may want to group several changes together as one history entry.
-
-BTW, the type of `browerHistoryTracker` is `BrowerHistoryTracker<State>` by `import {BrowerHistoryTracker} from '@selfage/stateful_navigator/browser_history_tracker'` and the type of `browserHistoryPusher` is `BrowserHistoryPusher` by `import {BrowserHistoryPusher} '@selfage/stateful_navigator/browser_history_pusher'`;
-
-## Tabs navigator
-
-```TypeScript
-import { TabsNavigator, Removeable } from '@selfage/stateful_navigator/tabs';
-
-// Supposing we created a tracker and a pusher as above.
-let browerHistoryTracker, browserHistoryPusher = // ...
-let homeButton: HTMLDivElement; // Supposing we created a <div> as the button going to the home page.
-let homeTabFactoryFn: () => Removeable; // Supposing we have a factory function that creates a home tab.
-let historyButton: HTMLDivElement; // Supposing we created a <div> as the button going to the history page.
-let historyTabFactoryFn: () => Removeable; // Supposing we have a factory function that creates a history tab.
-
-new TabsNavigator(browserHistoryPusher)
-  .add(
-    "home",
-    (callback) => browerHistoryTracker.state.on("showHome", callback),
-    (value) => (browerHistoryTracker.state.showHome = value),
-    (callback) => homeButton.addEventListener("click", callback),
-    () => homeTabFactoryFn()
-  )
-  .add(
-    "history",
-    (callback) => browerHistoryTracker.state.on("showHistory", callback),
-    (value) => (browerHistoryTracker.state.showHistory = value),
-    (callback) => historyButton.addEventListener("click", callback),
-    () => historyTabFactoryFn()
-  );
-// Add other listeners to browerHistoryTracker.state.
-browerHistoryTracker.initLoad();
-```
-
-`browserHistoryPusher` is passed to `TabsNavigator` to push a new history entry whenever user switches/navigates to a new tab.
-
-`tabsNavigator.add()` associates an arbitrary tab key (must be unique per `TabsNavigator` instance), a field of the state (handling state change as well as setting a new value), a button that triggers navigation, and a factory function that creates the tab.
-
-Note that the fields of the state used to associate with tabs have to be booleans, indicating whether the associated tab should be shown/created or hidden/removed.
-
-The factory functions take no arguments, and will be called every time that tab needs to be shown. The created tab will be removed every time it needs to be hidden. Thus the tab neesd to be `Removeable` as defined below.
-
-```TypeScript
-interface Removeable {
-  remove: () => void;
-}
-```
-
-The detailed sequence when a navigation happens is as the following.
-
-1. A button is clicked.
-1. A boolean field of the state representing the new tab is set to `true`.
-1. A boolean field of the state representing the previous shown tab is set to `undefined`.
-1. The previous tab is hidden by being removed.
-1. The new tab is shown by being created.
-1. A new history entry is pushed.
+BTW, the type of `loader` is `HistoryLoader<State>` by `import {HistoryLoader} from '@selfage/stateful_navigator/history_loader'` and the type of `updater` is `HistoryUpdater` by `import {HistoryUpdater} '@selfage/stateful_navigator/history_updater'`;
