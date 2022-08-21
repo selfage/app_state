@@ -1,9 +1,9 @@
 import { HistoryLoader } from "./history_loader";
 import { HistoryUpdater } from "./history_updater";
-import { MessageDescriptor } from "@selfage/message/descriptor";
+import { ObservableDescriptor } from "@selfage/observable/descriptor";
 
 export function createLoaderAndUpdater<T>(
-  stateDescriptor: MessageDescriptor<T>,
+  stateDescriptor: ObservableDescriptor<T>,
   queryParamKey: string
 ): [HistoryLoader<T>, HistoryUpdater] {
   let loader = HistoryLoader.create(stateDescriptor, queryParamKey);

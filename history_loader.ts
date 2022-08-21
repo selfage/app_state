@@ -1,17 +1,17 @@
-import { MessageDescriptor } from "@selfage/message/descriptor";
-import { parseMessage } from "@selfage/message/parser";
+import { ObservableDescriptor } from "@selfage/observable/descriptor";
+import { parseObservable } from "@selfage/observable/parser";
 
 export class HistoryLoader<T> {
-  public state = this.stateDescriptor.factoryFn();
+  public state = new this.stateDescriptor.constructor();
 
   public constructor(
-    private stateDescriptor: MessageDescriptor<T>,
+    private stateDescriptor: ObservableDescriptor<T>,
     private queryParamKey: string,
     private window: Window
   ) {}
 
   public static create<T>(
-    stateDescriptor: MessageDescriptor<T>,
+    stateDescriptor: ObservableDescriptor<T>,
     queryParamKey: string
   ): HistoryLoader<T> {
     return new HistoryLoader(stateDescriptor, queryParamKey, window).init();
@@ -37,7 +37,6 @@ export class HistoryLoader<T> {
     } else {
       stateObj = {};
     }
-
-    parseMessage(stateObj, this.stateDescriptor, this.state);
+    parseObservable(stateObj, this.stateDescriptor, this.state);
   }
 }
